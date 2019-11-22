@@ -1,13 +1,20 @@
 from fabric.contrib.files import append, exists, sed
-ifrom fabric.api import env, local, run
+from fabric.api import env, local, run
+from fabric.network import ssh
 import random
 
-REPO_URL = 'https://github.com/rsimister/tdd-website'
+REPO_URL = 'https://github.com/rsimister/tdd-website.git'
 
 def deploy():
     site_folder = f'/home/{env.user}/sites/{env.host}'
-
     source_folder = site_folder + '/source'
+    _create_directory_structure_if_necessary(site_folder)
+    _get_latest_source(source_folder)
+    _update_settings(source_folder, env.host)
+    _update_virtualenv(source_folder)
+    _update_static_files(source_folder)
+    _update_database(source_folder)
+
 
 def _create_directory_structure_if_necessary(site_folder):
     for subfolder in ('database', 'static', 'virtualenv', 'source'):
@@ -19,7 +26,7 @@ def _get_latest_source(source_folder):
     else:
         run(f'git clone {REPO_URL} {source_folder}')
     current_commit = local("git log -n 1 --format=%H", capture=True)
-        run(f'cd {source_folder} && git reset --hard {current_commit}')
+    run(f'cd {source_folder} && git reset --hard {current_commit}')
 
 def _update_settings(source_folder, site_name):
     settings_path = source_folder + '/superlists/settings.py'
